@@ -1,0 +1,13 @@
+<container>
+
+
+
+    <stream id="fact" class="io.JSONLineStream"  url="file:./fact_data.jsonl"/>
+
+    <process id="1" input="fact">
+        <PrintData/>
+        <ExampleProcess factor="0" />
+
+    </process>
+
+</container>
