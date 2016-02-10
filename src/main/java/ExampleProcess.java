@@ -3,9 +3,10 @@ import stream.Data;
 import stream.Processor;
 import stream.annotations.Parameter;
 
-import java.util.stream.Stream;
+import java.util.ArrayList;
 
 /**
+ * Calculate the mean of an array and multiply by some factor.
  * Created by kai on 09.02.16.
  */
 public class ExampleProcess implements Processor {

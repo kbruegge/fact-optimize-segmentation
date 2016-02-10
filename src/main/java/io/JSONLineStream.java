@@ -1,8 +1,6 @@
 package io;
 
-import com.google.common.collect.Collections2;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
+import com.google.common.primitives.Doubles;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -17,6 +15,7 @@ import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Read a .jsonl source for streaming.
@@ -44,6 +43,17 @@ public class JSONLineStream extends AbstractStream {
         if (item  == null) {
             return null;
         }
+
+        ArrayList<? extends Number> l = new ArrayList<>();
+        for(Map.Entry<String, Serializable> e : item.entrySet()){
+            if(e.getValue().getClass().isAssignableFrom(l.getClass())){
+                @SuppressWarnings("unchecked")
+                ArrayList<Double> list = (ArrayList<Double>) e.getValue();
+                e.setValue(Doubles.toArray(list));
+            }
+        }
+
         return DataFactory.create(item);
     }
+
 }
