@@ -1,5 +1,5 @@
 import hexmap.FactCameraPixel;
-import hexmap.FactHexPixelMapping;
+import hexmap.FactPixelMapping;
 import org.junit.Test;
 
 import java.io.File;
@@ -19,7 +19,7 @@ public class CameraCoordinatesTest {
 
     @Test
     public void bla(){
-        FactHexPixelMapping m  = FactHexPixelMapping.getInstance();
+        FactPixelMapping m  = FactPixelMapping.getInstance();
         FactCameraPixel pixel = m.getPixelBelowCoordinatesInMM(-4.0, 49.5);
         System.out.println(pixel);
         assertThat(pixel, is(not(nullValue())));
@@ -36,7 +36,7 @@ public class CameraCoordinatesTest {
      */
     @Test
     public void imageTest(){
-        FactHexPixelMapping m  = FactHexPixelMapping.getInstance();
+        FactPixelMapping m  = FactPixelMapping.getInstance();
         double step = 0.5;
         File output =  new File("matrix.txt");
         try {

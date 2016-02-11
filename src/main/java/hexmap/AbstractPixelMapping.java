@@ -26,7 +26,7 @@ import static java.lang.Math.abs;
  *
  * @author kai
  */
-public abstract class PixelMapping<T extends CameraPixel> {
+public abstract class AbstractPixelMapping<T extends CameraPixel> {
 
     public enum Orientation {
         FLAT_TOP(0),
@@ -58,8 +58,17 @@ public abstract class PixelMapping<T extends CameraPixel> {
     int rOffset = 0;
 
 
+    /**
+     * Concrete PixelMapping implementations return the number of pixels they use.
+     * @return the number of pixel in the camera.
+     */
     public abstract int getNumberOfPixel();
 
+    /**
+     * For each row in the .csv which specifies the camera geometry, this method gets called.
+     * @param item
+     * @return A concrete implmentation of a CameraPixel
+     */
     protected abstract T getPixelFromCSVItem(Data item);
 
 
@@ -77,7 +86,6 @@ public abstract class PixelMapping<T extends CameraPixel> {
      * This expects a file containing information on all of the pixel
      * @param mapping url to the mapping file
      */
-
     protected void load(URL mapping) throws IOException {
         //use the csv stream to read stuff from the csv file
         CsvStream stream = null;
@@ -136,6 +144,11 @@ public abstract class PixelMapping<T extends CameraPixel> {
         return axialGrid[q + qOffset][r + rOffset];
     }
 
+    /**
+     * Get pixels which are adjacent to the given pixel.
+     * @param p the pixel to find neighbours to
+     * @return a list of adjacent pixels
+     */
     public ArrayList<T> getNeighboursForPixel(CameraPixel p) {
         ArrayList<T> l = new ArrayList<>();
         //check if x coordinate is even or not
@@ -151,8 +164,12 @@ public abstract class PixelMapping<T extends CameraPixel> {
         return l;
     }
 
-    public ArrayList<T> getAllPixel(){
-        return (ArrayList<T>) cameraPixels;
+    /**
+     * All pixels which are in the camera
+     * @return The list containing all pixel objects.
+     */
+    public List<T> getAllPixel(){
+        return cameraPixels;
     }
 
     protected int[] getAxialCoordinatesFromRealWorldCoordinatesInMM(double xCoordinate, double yCoordinate){

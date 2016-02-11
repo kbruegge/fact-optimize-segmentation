@@ -16,30 +16,30 @@ import java.net.URL;
  * @author Kai
  * 
  */
-public class FactHexPixelMapping extends PixelMapping<FactCameraPixel> {
+public class FactPixelMapping extends AbstractPixelMapping<FactCameraPixel> {
 
 
-    static Logger log = LoggerFactory.getLogger(FactHexPixelMapping.class);
+    static Logger log = LoggerFactory.getLogger(FactPixelMapping.class);
 
 
-    private static FactHexPixelMapping mapping;
+    private static FactPixelMapping mapping;
 
-    public static FactHexPixelMapping getInstance() {
+    public static FactPixelMapping getInstance() {
         if (mapping ==  null){
             String pixelMap = "/fact_pixel_map.csv";
-            URL mapUrl = FactHexPixelMapping.class.getResource(pixelMap);
+            URL mapUrl = FactPixelMapping.class.getResource(pixelMap);
             if(mapUrl == null){
                 String msg = "Could not load pixel mapping from URL: " + pixelMap + ". Does the file exist?";
                 log.error(msg);
                 throw new InstantiationError(msg);
             } else {
-                mapping = new FactHexPixelMapping(mapUrl);
+                mapping = new FactPixelMapping(mapUrl);
             }
         }
         return mapping;
     }
 
-    private FactHexPixelMapping(URL mappingURL) {
+    private FactPixelMapping(URL mappingURL) {
         if(mappingURL.getFile().isEmpty()){
             throw new RuntimeException("Could not find pixel mapping file");
         }
