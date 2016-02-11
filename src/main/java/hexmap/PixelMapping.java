@@ -3,17 +3,14 @@
  */
 package hexmap;
 
-import com.google.common.collect.Lists;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.common.collect.Ordering;
 import stream.Data;
 import stream.io.CsvStream;
 import stream.io.SourceURL;
 
+import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.*;
 
 import static java.lang.Math.abs;
 
@@ -31,8 +28,6 @@ import static java.lang.Math.abs;
  */
 public abstract class PixelMapping<T extends CameraPixel> {
 
-    static Logger log = LoggerFactory.getLogger(PixelMapping.class);
-
     public enum Orientation {
         FLAT_TOP(0),
         POINTY_TOP(1);
@@ -48,15 +43,16 @@ public abstract class PixelMapping<T extends CameraPixel> {
     protected Orientation orientation = Orientation.FLAT_TOP;
 
 
+    //offsets to neigbouring pixels in axial coordinates.
     private final int[][] neighbourOffsets = {
             {+1, 0}, {+1, -1}, {0, -1}, {-1, 0}, {-1, +1}, {0, +1}
     };
 
+    // list containing all pixels in the camera
+    private  List<T> cameraPixels;
 
-    private T[] pixelArray;
 
-
-    //This array contains the camera pixels in axial layout. I dont care about unused entries.
+    //This array contains the camera pixels in axial layout. I don't care about unused entries.
     private T[][] axialGrid;
     int qOffset = 0;
     int rOffset = 0;
@@ -73,7 +69,7 @@ public abstract class PixelMapping<T extends CameraPixel> {
 
 
     public T getPixelFromId(int id){
-        return pixelArray[id];
+        return cameraPixels.get(id);
     }
 
 
@@ -82,21 +78,19 @@ public abstract class PixelMapping<T extends CameraPixel> {
      * @param mapping url to the mapping file
      */
 
-    protected void load(URL mapping){
+    protected void load(URL mapping) throws IOException {
         //use the csv stream to read stuff from the csv file
         CsvStream stream = null;
         try {
             stream = new CsvStream(new SourceURL(mapping), ",");
             stream.init();
         } catch (Exception e){
-            log.error(e.toString());
+            e.printStackTrace();
+            throw new IOException("Could not load pixel positions from file " + mapping);
         }
 
-//        TODO: test this. See Effective Java Item 26 on how to create generic arrays. this could be replaced by some hashmap of course.
-        //But I cant think of a quick hash function.
-//        ArrayList<T> l = new ArrayList<>();
-        pixelArray = (T[]) new CameraPixel[getNumberOfPixel()];
 
+        ArrayList<T> pixels = new ArrayList<>(getNumberOfPixel());
 
         int maxQ = Integer.MIN_VALUE;
         int minQ = Integer.MAX_VALUE;
@@ -109,7 +103,8 @@ public abstract class PixelMapping<T extends CameraPixel> {
             try {
                 item = stream.readNext();
             } catch (Exception e) {
-                log.error(e.toString());
+                e.printStackTrace();
+                throw new IllegalArgumentException("Could not parse pixel positions from file " + mapping);
             }
             T p = getPixelFromCSVItem(item);
 
@@ -118,15 +113,18 @@ public abstract class PixelMapping<T extends CameraPixel> {
 
             maxR = Math.max(maxR, p.axialR);
             minR = Math.min(minR, p.axialR);
-
-            pixelArray[i] = p;
+            pixels.add(p);
         }
+
+        cameraPixels = Ordering.natural().onResultOf(o -> ((CameraPixel) o).id).sortedCopy(pixels);
+
         qOffset = abs(minQ);
         rOffset = abs(minR);
 
+        //noinspection unchecked
         axialGrid = (T[][]) new CameraPixel[abs(minQ) + maxQ + 1][abs(minR) + maxR + 1];
 
-        for (T pixel : pixelArray){
+        for (T pixel : this.cameraPixels){
             axialGrid[pixel.axialQ + abs(minQ)][pixel.axialR + abs(minR)] = pixel;
         }
     }
@@ -135,7 +133,6 @@ public abstract class PixelMapping<T extends CameraPixel> {
         if(q + qOffset < 0 || r + rOffset < 0 ||(q + qOffset) >= axialGrid.length || (r + rOffset) >= axialGrid[0].length) {
             return null;
         }
-
         return axialGrid[q + qOffset][r + rOffset];
     }
 
@@ -155,34 +152,19 @@ public abstract class PixelMapping<T extends CameraPixel> {
     }
 
     public ArrayList<T> getAllPixel(){
-        return Lists.newArrayList(pixelArray);
+        return (ArrayList<T>) cameraPixels;
     }
 
-    protected int[] getAxialCoordinatesFromRealWorlCoordinates(double x, double y){
-        return null;
-    }
-
-    /**
-     * Get the FactCameraPixel sitting below the coordinates passed to the method.
-     * The center of the coordinate system in the camera is the center of the camera.
-     *
-     * @param xCoordinate
-     * @param yCoordinate
-     * @return The pixel below the point or NULL if the pixel does not exist.
-     */
-    public T getPixelBelowCoordinatesInMM(double xCoordinate, double yCoordinate){
-        //get some pixel near the point provided
-        //in pixel units
-        xCoordinate /= 9.5;
-        yCoordinate /= -9.5;
+    protected int[] getAxialCoordinatesFromRealWorldCoordinatesInMM(double xCoordinate, double yCoordinate){
+//        xCoordinate /= 9.5;
+//        yCoordinate /=- 9.5;
         yCoordinate += 0.5;
-
         //distance from center to corner
-        double size  = 1.0/Math.sqrt(3);
         double axial_r = 0;
         double axial_q = 0;
 
         double factor = 1/ (Math.sqrt(3));
+        double size  = 9.5 * factor;
 
         if (orientation == Orientation.FLAT_TOP) {
             axial_q = 2.0 / 3.0 * xCoordinate / size;
@@ -219,9 +201,25 @@ public abstract class PixelMapping<T extends CameraPixel> {
         //convert the cube coordinate back to axial coordiantes
         int q = rx;
         int r = rz;
+        return new int[]{q, r};
+    }
 
-        T p = getPixelFromAxialCoordinates(q, r);
-        return p;
+
+    /**
+     * Get the FactCameraPixel sitting below the coordinates passed to the method.
+     * The center of the coordinate system in the camera is the center of the camera.
+     *
+     * @param xCoordinate the real world x coordinate in mm
+     * @param yCoordinate the real world y coordinate in mm
+     * @return The pixel below the point or NULL if the pixel does not exist.
+     */
+    public T getPixelBelowCoordinatesInMM(double xCoordinate, double yCoordinate){
+        //get some pixel near the point provided
+        //in pixel units
+
+        int[] ax = getAxialCoordinatesFromRealWorldCoordinatesInMM(xCoordinate, yCoordinate);
+
+        return getPixelFromAxialCoordinates(ax[0], ax[1]);
     }
 
 

@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import stream.Data;
 
+import java.io.IOException;
 import java.net.URL;
 
 /**
@@ -15,7 +16,7 @@ import java.net.URL;
  * @author Kai
  * 
  */
-public class FactHexPixelMapping extends PixelMapping<CameraPixel> {
+public class FactHexPixelMapping extends PixelMapping<FactCameraPixel> {
 
 
     static Logger log = LoggerFactory.getLogger(FactHexPixelMapping.class);
@@ -25,7 +26,7 @@ public class FactHexPixelMapping extends PixelMapping<CameraPixel> {
 
     public static FactHexPixelMapping getInstance() {
         if (mapping ==  null){
-            String pixelMap = "/hexmap/fact-pixel-map.csv";
+            String pixelMap = "/fact_pixel_map.csv";
             URL mapUrl = FactHexPixelMapping.class.getResource(pixelMap);
             if(mapUrl == null){
                 String msg = "Could not load pixel mapping from URL: " + pixelMap + ". Does the file exist?";
@@ -42,7 +43,12 @@ public class FactHexPixelMapping extends PixelMapping<CameraPixel> {
         if(mappingURL.getFile().isEmpty()){
             throw new RuntimeException("Could not find pixel mapping file");
         }
-        load(mappingURL);
+        try {
+            load(mappingURL);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Could not instatiate pixelmap");
+        }
     }
 
 
@@ -52,24 +58,22 @@ public class FactHexPixelMapping extends PixelMapping<CameraPixel> {
      *
      * @return a pixel with the info from the item
      */
-    protected CameraPixel getPixelFromCSVItem(Data item){
-        int id = (int)(item.get("id"));
+    protected FactCameraPixel getPixelFromCSVItem(Data item){
+        int id = (int)(item.get("CHID"));
+        int softID = (int)(item.get("softID"));
+        int hardID = (int)(item.get("hardID"));
 
         //convert them to millimeter by multiplying with the pixel diameter
         double posX = Double.parseDouble(item.get("pos_X").toString())*9.5;
         double posY = Double.parseDouble(item.get("pos_Y").toString())*9.5;
-        return null;
 
-//        int cubeX = col;
-//        int cubeZ = row - (col - Math.abs(col % 2))/2;
+        int [] ax = getAxialCoordinatesFromRealWorldCoordinatesInMM(posX, posY);
+
+        int axialQ = ax[0];
+        int axialR = ax[1];
 //
-//        int axialQ = cubeX;
-//        int axialR = cubeZ;
-//
-//        //this is how you get the chid from all other numbers which are present in the fact pixelmapping file.
-//        int chid = (hardID % 10) + 9 * ((hardID / 10) % 10) + 36 * ((hardID / 100) % 10) + 360 * (hardID / 1000);
-//        FactCameraPixel p = new FactCameraPixel(chid, softID, hardID, axialQ , axialR, posX, posY);
-//        return p;
+        //this is how you get the chid from all other numbers which are present in the fact pixelmapping file.
+        return new FactCameraPixel(id, softID, hardID, axialQ , axialR, posX, posY);
     }
 
 
