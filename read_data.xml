@@ -5,9 +5,8 @@
     <stream id="fact" class="io.JSONLineStream"  url="file:./fact_data.jsonl"/>
 
     <process id="1" input="fact">
-        <PrintData/>
-        <ExampleProcess factor="0" />
-
+        <TwoLevelCleaning firstThreshold="6" secondThreshold="3" minNumberOfPixel="5"/>
+        <io.JSONWriter url="file:./test.json" keys="shower"/>
     </process>
 
 </container>
