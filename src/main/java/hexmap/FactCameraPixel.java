@@ -44,7 +44,7 @@ public class FactCameraPixel extends CameraPixel implements Serializable {
 
     @Override
     public String toString(){
-        return "FactPixel " + this.chid + " at position " + xPositionInMM + ", " + yPositionInMM + " in mm";
+        return String.valueOf(this.id);
     }
 
 

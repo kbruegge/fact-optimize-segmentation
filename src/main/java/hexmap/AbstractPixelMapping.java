@@ -251,24 +251,24 @@ public abstract class AbstractPixelMapping<T extends CameraPixel> {
      *            the list to search in
      * @return A list of lists.
      */
-    public ArrayList<ArrayList<Integer>> breadthFirstSearch(Collection<Integer> showerPixel) {
-        ArrayList<ArrayList<Integer>> listOfIslands = new ArrayList<>();
-        HashSet<Integer> marked = new HashSet<>();
+    public ArrayList<ArrayList<CameraPixel>> breadthFirstSearch(Collection<CameraPixel> showerPixel) {
+        ArrayList<ArrayList<CameraPixel>> listOfIslands = new ArrayList<>();
+        HashSet<CameraPixel> marked = new HashSet<>();
 
-        for (int pix : showerPixel) {
+        for (CameraPixel pix : showerPixel) {
             if (!marked.contains(pix)) {
                 // start BFS
                 marked.add(pix);
-                ArrayList<Integer> q = new ArrayList<>();
+                ArrayList<CameraPixel> q = new ArrayList<>();
                 q.add(pix);
                 for (int index = 0; index < q.size() && !q.isEmpty(); index++) {
                     // add neighbours to q
-                    ArrayList<T> neighbors = getNeighboursForPixelId(q.get(index));
+                    ArrayList<T> neighbors = getNeighboursForPixel(q.get(index));
                     for (T i : neighbors) {
-                        if (showerPixel.contains(i.id)
-                                && !marked.contains(i.id)) {
-                            q.add(i.id);
-                            marked.add(i.id);
+                        if (showerPixel.contains(i)
+                                && !marked.contains(i)) {
+                            q.add(i);
+                            marked.add(i);
                         }
                     }
                 }
