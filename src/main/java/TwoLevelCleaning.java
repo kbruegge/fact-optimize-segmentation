@@ -32,7 +32,7 @@ public class TwoLevelCleaning implements Processor{
         showerPixel = addCorePixel(showerPixel, photons, firstThreshold);
         showerPixel = addNeighboringPixels(showerPixel, photons, secondThreshold);
         showerPixel = removeSmallCluster(showerPixel, minNumberOfPixel);
-        item.put("shower", showerPixel);
+        item.put("shower", showerPixel.stream().mapToInt(c -> c.id).toArray());
         return item;
     }
 
